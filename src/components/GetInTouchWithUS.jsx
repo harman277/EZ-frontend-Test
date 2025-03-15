@@ -11,10 +11,7 @@ const GetInTouchWithUs = () => {
   const [apiError, setApiError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const validateEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-  };
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const validateFile = (file) => {
     if (!file) return "Please select a file to upload.";
@@ -29,63 +26,62 @@ const GetInTouchWithUs = () => {
     setFileError("");
     setApiError("");
 
-
-    if (!email) {
-      setEmailError("Email is required.");
-      return;
-    }
-    if (!validateEmail(email)) {
-      setEmailError("Invalid email format.");
-      return;
-    }
-    if (email.endsWith("@ez.works")) {
-      setEmailError("Emails ending with @ez.works are not allowed.");
-      return;
-    }
+    if (!email) return setEmailError("Email is required.");
+    if (!validateEmail(email)) return setEmailError("Invalid email format.");
+    if (email.endsWith("@ez.works")) return setEmailError("Emails ending with @ez.works are not allowed.");
 
     const fileValidationError = validateFile(file);
-    if (fileValidationError) {
-      setFileError(fileValidationError);
-      return;
-    }
+    if (fileValidationError) return setFileError(fileValidationError);
 
     setIsLoading(true);
 
     try {
-      const emailResponse = await axios.post("https://test.ezworks.ai/api", { email });
+      // Step 1: Validate email
+      const emailResponse = await axios.post(
+        "https://test.ezworks.ai/api",
+        { email },
+        { headers: { "Content-Type": "application/json" } }
+      );
 
-      if (emailResponse.status === 422) {
-        setEmailError("Emails ending with @ez.works are not allowed.");
-        return;
-      }
-      const uploadUrlResponse = await axios.post("https://test.ezworks.ai/upload-get-url", {
-        email,
-        file_name: file.name,
-        chunk_size: 1024 * 1024, 
-        file_size: file.size,
-      });
+      if (emailResponse.status === 422) return setEmailError("Emails ending with @ez.works are not allowed.");
 
-      if (uploadUrlResponse.status !== 200) {
+      // Step 2: Get Upload URL
+      const uploadUrlResponse = await axios.post(
+        "https://test.ezworks.ai/upload-get-url",
+        {
+          email,
+          file_name: file.name,
+          chunk_size: 1024 * 1024, // 1MB
+          file_size: file.size,
+        },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      if (uploadUrlResponse.status !== 200 || !uploadUrlResponse.data.upload_url) {
         throw new Error("Failed to get upload URL.");
       }
 
       const { upload_url, upload_id } = uploadUrlResponse.data;
 
+      // Step 3: Upload file
       const uploadFileResponse = await axios.put(upload_url, file, {
         headers: {
-          "Content-Type": "text/plain", 
+          "Content-Type": "text/plain", // Keep this as text/plain
         },
       });
 
-      if (uploadFileResponse.status !== 200) {
-        throw new Error("Failed to upload file.");
-      }
+      if (uploadFileResponse.status !== 200) throw new Error("Failed to upload file.");
 
-      const uploadCompleteResponse = await axios.post("https://test.ezworks.ai/upload-complete", {
-        file_name: file.name,
-        upload_id,
-        parts: [], 
-      });
+      // Step 4: Confirm upload completion
+      const uploadCompleteResponse = await axios.post(
+        "https://test.ezworks.ai/upload-complete",
+        {
+          file_name: file.name,
+          upload_id,
+          parts: [],
+        },
+        { headers: { "Content-Type": "application/json" } }
+      );
 
       if (uploadCompleteResponse.status === 200) {
         alert("File Uploaded Successfully!");
@@ -93,12 +89,8 @@ const GetInTouchWithUs = () => {
         setFile(null);
       }
     } catch (err) {
-      if (err.response && err.response.status === 422) {
-        setEmailError("Emails ending with @ez.works are not allowed.");
-      } else {
-        setApiError("Something went wrong. Please try again.");
-        console.error("API Error:", err);
-      }
+      setApiError(err.response?.data?.message || "Something went wrong. Please try again.");
+      console.error("API Error:", err.response || err);
     } finally {
       setIsLoading(false);
     }
