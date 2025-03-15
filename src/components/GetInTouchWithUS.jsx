@@ -9,6 +9,19 @@ const GetInTouchWithUs = () => {
   const [emailError, setEmailError] = useState("");
   const [fileError, setFileError] = useState("");
   const [apiError, setApiError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const validateEmail = (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
+
+  const validateFile = (file) => {
+    if (!file) return "Please select a file to upload.";
+    if (file.type !== "text/plain") return "Only .txt files are allowed.";
+    if (file.size > 10 * 1024 * 1024) return "File size must be less than 10MB.";
+    return "";
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,44 +29,78 @@ const GetInTouchWithUs = () => {
     setFileError("");
     setApiError("");
 
+
     if (!email) {
-      setEmailError("Email is required");
+      setEmailError("Email is required.");
       return;
     }
-    if (!file) {
-      setFileError("Please select a file to upload");
+    if (!validateEmail(email)) {
+      setEmailError("Invalid email format.");
+      return;
+    }
+    if (email.endsWith("@ez.works")) {
+      setEmailError("Emails ending with @ez.works are not allowed.");
       return;
     }
 
+    const fileValidationError = validateFile(file);
+    if (fileValidationError) {
+      setFileError(fileValidationError);
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      // Step 1: Validate Email using API
       const emailResponse = await axios.post("https://test.ezworks.ai/api", { email });
 
       if (emailResponse.status === 422) {
-        setEmailError("Emails ending with @ez.works are not allowed");
+        setEmailError("Emails ending with @ez.works are not allowed.");
         return;
       }
-
-      // Step 2: Proceed with File Upload
-      const uploadResponse = await axios.post("https://test.ezworks.ai/upload-get-url", {
+      const uploadUrlResponse = await axios.post("https://test.ezworks.ai/upload-get-url", {
         email,
         file_name: file.name,
-        chunk_size: 1024 * 1024,
+        chunk_size: 1024 * 1024, 
         file_size: file.size,
       });
 
-      if (uploadResponse.status === 200) {
+      if (uploadUrlResponse.status !== 200) {
+        throw new Error("Failed to get upload URL.");
+      }
+
+      const { upload_url, upload_id } = uploadUrlResponse.data;
+
+      const uploadFileResponse = await axios.put(upload_url, file, {
+        headers: {
+          "Content-Type": "text/plain", 
+        },
+      });
+
+      if (uploadFileResponse.status !== 200) {
+        throw new Error("Failed to upload file.");
+      }
+
+      const uploadCompleteResponse = await axios.post("https://test.ezworks.ai/upload-complete", {
+        file_name: file.name,
+        upload_id,
+        parts: [], 
+      });
+
+      if (uploadCompleteResponse.status === 200) {
         alert("File Uploaded Successfully!");
         setEmail("");
         setFile(null);
       }
     } catch (err) {
       if (err.response && err.response.status === 422) {
-        setEmailError("Emails ending with @ez.works are not allowed");
+        setEmailError("Emails ending with @ez.works are not allowed.");
       } else {
         setApiError("Something went wrong. Please try again.");
         console.error("API Error:", err);
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,11 +124,14 @@ const GetInTouchWithUs = () => {
         </div>
 
         <div className="form__group">
-          <label htmlFor="file" className="form__label">Upload File:</label>
+          <label htmlFor="file" className="form__label">
+            Upload File:
+          </label>
           <input
             type="file"
             id="file"
             className="form__input"
+            accept=".txt"
             onChange={(e) => setFile(e.target.files[0])}
           />
           {fileError && <span className="error-message">{fileError}</span>}
@@ -89,7 +139,9 @@ const GetInTouchWithUs = () => {
 
         {apiError && <span className="error-message">{apiError}</span>}
 
-        <button type="submit" className="form__button">Upload & Submit</button>
+        <button type="submit" className="form__button" disabled={isLoading}>
+          {isLoading ? "Uploading..." : "Upload & Submit"}
+        </button>
       </form>
     </div>
   );
