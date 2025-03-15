@@ -1,0 +1,30 @@
+body{
+  width: 100%;
+  background-color: white;
+}
+.left{
+  width: 30%;
+  margin-left: 100px;
+}
+.logo-image{
+  width: 100%;
+}
+.logo-image img{
+  width: 65%;
+}
+.left h2{
+  color: black;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 500;
+}
+.left p{
+  color: black;
+  text-align: justify;
+  margin-top: 30px;
+  font-size:18px;
+}
+.container{
+  margin-top: 100px;
+  display: flex;
+  justify-content: space-evenly;
+}

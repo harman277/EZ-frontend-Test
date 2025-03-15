@@ -1,0 +1,36 @@
+.right-container{
+ width: 50%;
+ height: 50vh;
+ display: grid;
+ grid-template-columns:1fr 1fr 1fr;
+ grid-template-rows: 1fr 1fr;
+ grid-gap: 20px;
+}
+.card{
+ border-radius: 10px;
+ background-color:#112949;
+}
+.card-first-row{
+ width: 100%;
+ margin: 10px;
+ display: flex;
+ align-items: center;
+}
+.card-row-image{
+ width: 30%;
+ display: flex;
+ justify-content: center;
+}
+.card-row-image img{
+ width: 80%;
+}
+.card-row-title{
+ width: 70%;
+ color:#3cc3f2;
+}
+.card-second-row{
+ text-align: left;
+ margin-left: 5px;
+ font-weight: 600;
+}
+
