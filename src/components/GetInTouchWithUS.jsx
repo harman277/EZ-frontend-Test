@@ -5,20 +5,9 @@ import axios from "axios";
 
 const GetInTouchWithUs = () => {
   const [email, setEmail] = useState("");
-  const [file, setFile] = useState(null);
   const [emailError, setEmailError] = useState("");
-  const [fileError, setFileError] = useState("");
-  const [apiError, setApiError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-  const validateFile = (file) => {
-    if (!file) return "Please select a file to upload.";
-    if (file.type !== "text/plain") return "Only .txt files are allowed.";
-    if (file.size > 10 * 1024 * 1024) return "File size must be less than 10MB.";
-    return "";
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,59 +32,7 @@ const GetInTouchWithUs = () => {
         { headers: { "Content-Type": "application/json" } }
       );
 
-      if (emailResponse.status === 422) return setEmailError("Emails ending with @ez.works are not allowed.");
-
-      // Step 2: Get Upload URL
-      const uploadUrlResponse = await axios.post(
-        "https://test.ezworks.ai/upload-get-url",
-        {
-          email,
-          file_name: file.name,
-          chunk_size: 1024 * 1024, // 1MB
-          file_size: file.size,
-        },
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      if (uploadUrlResponse.status !== 200 || !uploadUrlResponse.data.upload_url) {
-        throw new Error("Failed to get upload URL.");
-      }
-
-      const { upload_url, upload_id } = uploadUrlResponse.data;
-
-      // Step 3: Upload file
-      const uploadFileResponse = await axios.put(upload_url, file, {
-        headers: {
-          "Content-Type": "text/plain", // Keep this as text/plain
-        },
-      });
-
-      if (uploadFileResponse.status !== 200) throw new Error("Failed to upload file.");
-
-      // Step 4: Confirm upload completion
-      const uploadCompleteResponse = await axios.post(
-        "https://test.ezworks.ai/upload-complete",
-        {
-          file_name: file.name,
-          upload_id,
-          parts: [],
-        },
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      if (uploadCompleteResponse.status === 200) {
-        alert("File Uploaded Successfully!");
-        setEmail("");
-        setFile(null);
-      }
-    } catch (err) {
-      setApiError(err.response?.data?.message || "Something went wrong. Please try again.");
-      console.error("API Error:", err.response || err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+      if (emailResponse.status === 422) return setEmailError("Emails ending with @ez.works are not allowed."); 
   return (
     <div className="form__container">
       <form className="form" onSubmit={handleSubmit}>
