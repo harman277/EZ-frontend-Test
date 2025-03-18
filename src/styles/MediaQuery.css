@@ -4,6 +4,9 @@
     flex-direction: column;
     align-items: center;
   }
+  #root{
+    height: 300vh;
+  }
   .container .right-container {
     width: 80%;
     display: grid;
@@ -28,6 +31,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+  #root{
+    height: 300vh;
   }
   .container .right-container {
     width: 70%;
@@ -54,6 +60,9 @@
     flex-direction: column;
     align-items: center;
   }
+  #root{
+    height: 300vh;
+  }
   .container .right-container {
     width: 90%;
     display: grid;
@@ -79,6 +88,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+  #root{
+    height: 300vh;
   }
   .container .right-container {
     margin-top: 30px;
